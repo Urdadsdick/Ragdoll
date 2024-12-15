@@ -1,0 +1,77 @@
+-- Load the Orion Library
+local OrionLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Orion/main/source"))()
+
+-- Create Window
+local Window = OrionLib:MakeWindow({
+    Name = "Goat Hub for Roblox",
+    HidePremium = false,
+    SaveConfig = true,
+    ConfigFolder = "GoatHub"
+})
+
+-- Global Variables
+_G.ragdollCollapse = false
+
+-- Function to enable Ragdoll Collapse
+function enableRagdollCollapse()
+    local player = game.Players.LocalPlayer
+    local character = player.Character
+    if not character then return end
+
+    game:GetService("RunService").Heartbeat:Connect(function()
+        if _G.ragdollCollapse and character and character:FindFirstChild("HumanoidRootPart") then
+            for _, otherPlayer in pairs(game.Players:GetPlayers()) do
+                if otherPlayer ~= player and otherPlayer.Character and otherPlayer.Character:FindFirstChild("Humanoid") then
+                    local otherCharacter = otherPlayer.Character
+                    local humanoid = otherCharacter:FindFirstChild("Humanoid")
+                    local distance = (character.HumanoidRootPart.Position - otherCharacter.PrimaryPart.Position).Magnitude
+
+                    if humanoid and humanoid.Health > 0 and distance < 5 then -- 5-stud range
+                        if not otherCharacter:FindFirstChild("RagdollForce") then
+                            -- Create Ragdoll Effect
+                            humanoid:ChangeState(Enum.HumanoidStateType.Physics) -- Force ragdoll
+                            local bodyVelocity = Instance.new("BodyVelocity", otherCharacter.HumanoidRootPart)
+                            bodyVelocity.Name = "RagdollForce"
+                            bodyVelocity.MaxForce = Vector3.new(1e6, 1e6, 1e6) -- Strong enough to fling
+                            bodyVelocity.Velocity = Vector3.new(0, 50, 0) -- Push upwards slightly
+                            game:GetService("Debris"):AddItem(bodyVelocity, 1) -- Remove effect after 1 second
+                        end
+                    end
+                end
+            end
+        end
+    end)
+end
+
+-- Disable Ragdoll Collapse
+function disableRagdollCollapse()
+    for _, otherPlayer in pairs(game.Players:GetPlayers()) do
+        if otherPlayer.Character and otherPlayer.Character:FindFirstChild("RagdollForce") then
+            otherPlayer.Character.RagdollForce:Destroy()
+        end
+    end
+end
+
+-- Trolling Tab
+local trollingTab = Window:MakeTab({
+    Name = "Trolling",
+    Icon = "rbxassetid://6034816636", -- Star Icon
+    PremiumOnly = false
+})
+
+-- Ragdoll Collapse Toggle
+trollingTab:AddToggle({
+    Name = "Enable Ragdoll Collapse",
+    Default = false,
+    Callback = function(Value)
+        _G.ragdollCollapse = Value
+        if Value then
+            enableRagdollCollapse()
+        else
+            disableRagdollCollapse()
+        end
+    end
+})
+
+-- Initialize Orion GUI
+OrionLib:Init()
